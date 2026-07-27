@@ -1,3 +1,6 @@
 [submodule "livid-online-editor"]
 	path = livid-online-editor
 	url = https://github.com/LividInstruments/Livid-Online-Editor.git
+[submodule "ableton-js"]
+	path = ableton-js
+	url = https://github.com/leolabs/ableton-js.git
