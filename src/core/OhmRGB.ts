@@ -1,16 +1,6 @@
 import * as easymidi from 'easymidi'
 import { EventEmitter } from 'events'
-
-export enum OhmColor {
-  Off = 0,
-  Red = 1,
-  Green = 2,
-  Yellow = 3,
-  Blue = 4,
-  Magenta = 5,
-  Cyan = 6,
-  White = 7,
-}
+import { OhmColor } from '../enums'
 
 export class OhmRGB extends EventEmitter {
   private input: easymidi.Input
