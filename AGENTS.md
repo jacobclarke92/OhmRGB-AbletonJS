@@ -53,12 +53,16 @@ Relevant SysEx commands used for updating the controller interface:
 
 The application will listen to SysEx or Note/CC data on a specific global channel to switch visual and functional contexts.
 
-1. **Session Screen:** Map 8x8 to Ableton Clip Slots.
+1. **Session Screen:** Maps the OhmRGB inner 6x6 grid to Ableton's Session View clip slots.
+   - **Grid Navigation:** Defines an inner 6x6 grid to reserve the outer edge pads for navigation and utility functions. Controls the Ableton "Red Ring" session view highlight natively via `setupSessionBox` and `setSessionOffset`.
+   - **Intelligent LED Caching:** Sending 64 individual MIDI messages takes time and blocks the event loop. By using a `Map<number, OhmColor>` state cache, `setLedCached()` only dispatches a `noteon` message if the requested color is different from the currently known state. This dramatically reduces latency from ~2000ms down to a fraction.
+   - **Garbage-Collected Absolute Listeners:** Clip slot event listeners (`is_playing`, `has_clip`, `is_triggered`) are mapped to absolute coordinates (`trackOffset + x`, etc.) rather than grid-relative keys. A `Map` tracking active `id` hashes guarantees listeners aren't duplicated and are garbage-collected dynamically as the 6x6 viewport navigates away from them.
+   - **Column Context Sweeping:** Stopping a playing track by clicking an _empty_ clip slot in Live stops the audio, but the `ableton-js` API occasionally doesn't emit state teardown events for the clip that was actually stopped. The `SessionScreen` handles this elegantly by manually refreshing the visual states of an entire vertical track column bounds whenever a slot interaction occurs.
 2. **Device/Drum Screen:** Map 8x8 to Drum Racks mapping and device macro controls.
 3. **Looper Screen (Proof of Concept):**
    - Dynamically scans Ableton session for tracks containing `[BUSX]` (where X is 1-8).
    - Maps `[BUSX]` tracks to the 2x4 "Slider Buttons" block (IDs 66-73) for track selection.
-   - Assigns right transport buttons (IDs 77-80) to manipulate the fundamental "State" parameters of an Ableton `Looper` device on the currently selected track (0=Stop, 1=Record, 2=Play, 3=Overdub).
+   - Assigns top-right macro buttons (IDs 77-80) to manipulate the fundamental "State" parameters of an Ableton `Looper` device on the currently selected track (0=Stopped, 1=Overdubbing, 2=Recording, 3=Playing).
    - Demonstrates dynamic LED feedback (e.g. Blue = Selected track, Green = Track exists but inactive, Off = No track mapped).
 
 ## Architecture & Implementation Learnings
@@ -70,12 +74,12 @@ The application will listen to SysEx or Note/CC data on a specific global channe
 
 ## Hardware & Reverse-Engineering Learnings
 
-### Action Maps vs LED Maps (The "AHA" Moment)
+### Action Maps vs LED Maps
 
-On the OhmRGB firmware, **Action Maps** (the MIDI note emitted when a button is physically pressed) and **LED Maps** (the MIDI note the hardware listens to in order to light up a button) are completely decoupled.
+On the OhmRGB firmware, **Action Maps** (the MIDI note emitted when a button is physically pressed) and **LED Maps** (the MIDI note the hardware listens to in order to light up a button) are completely decoupled.  
+For example the 8x8 grid, midi notes flow from left to right, top to bottom, but the LED map is from top to bottom, left to right.
 
 - When changing a color in the Livid Editor, it communicates via raw hardware dumps (`CMD 4` SysEx), modifying the physical `btn_ID` embedded in the hardware (e.g., `btn_76` for the Play button).
-- When trying to update colors in Node.js via performance mapping (`noteon` messages), you must send the exact MIDI Note index registered in the **LED Map** (`CMD 35` for Notes, `CMD 36` for CCs). Sending matching notes won't work unless the routing tables are set 1:1.
 
 ### Deciphering the Livid Online Editor Codebase
 

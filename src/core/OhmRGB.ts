@@ -2,7 +2,7 @@ import * as easymidi from 'easymidi'
 import { EventEmitter } from 'events'
 import { OhmColor } from '../enums'
 
-export const BIG_BUTTON = 87
+export const BIG_BUTTON = 87 as const
 
 // Top-right button group
 // prettier-ignore
