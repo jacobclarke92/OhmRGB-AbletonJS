@@ -52,6 +52,9 @@ export class LooperScreen extends VirtualScreen {
   async onActivate() {
     console.log('LooperScreen Activated')
 
+    // Just for fun: 8x8 Grid color wave
+    await this.playColorWave()
+
     // Find our [BUSX] tracks
     await this.scanBusTracks()
 
@@ -267,6 +270,34 @@ export class LooperScreen extends VirtualScreen {
       }
     } catch (err) {
       console.error('Error interacting with Ableton API:', err)
+    }
+  }
+
+  private async playColorWave() {
+    const colors = [
+      OhmColor.Red,
+      OhmColor.Yellow,
+      OhmColor.Green,
+      OhmColor.Cyan,
+      OhmColor.Blue,
+      OhmColor.Magenta,
+      OhmColor.White,
+    ]
+
+    for (let d = 0; d <= 14; d++) {
+      for (let i = 0; i < 64; i++) {
+        const x = i % 8
+        const y = Math.floor(i / 8)
+        if (x + y === d) {
+          this.ohm.setLed(i, colors[d % colors.length] ?? OhmColor.Red)
+        }
+      }
+      await new Promise((r) => setTimeout(r, 60))
+    }
+
+    await new Promise((r) => setTimeout(r, 100))
+    for (let i = 0; i < 64; i++) {
+      this.ohm.setLed(i, OhmColor.Off)
     }
   }
 }

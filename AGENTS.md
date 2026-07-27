@@ -14,15 +14,16 @@ Below is the SysEx and hardware mapping protocol gleaned from the `livid-online-
 
 ### Color Palette (Velocity / Index)
 
-The OhmRGB uses a 3-bit RGB LED under each button. Supported combinations yield 8 colors: 0. Off
+The OhmRGB uses a 3-bit RGB LED under each button. Supported combinations yield 8 colors, which are controlled via standard MIDI Note On velocity payload bits. To correctly command true colors inside Ableton/Node, the velocities are mapped to powers of 2 (bitmasks/binary scaling thresholds) rather than sequentially:
 
-1. Red
-2. Green
-3. Yellow
-4. Blue
-5. Magenta
-6. Cyan
-7. White
+0. Off = 0
+1. Red = 2
+2. Green = 4
+3. Yellow = 8
+4. Blue = 16
+5. Magenta = 32
+6. Cyan = 64
+7. White = 127
 
 ### Hardware Layout & Parsing Defaults
 
@@ -66,3 +67,21 @@ The application will listen to SysEx or Note/CC data on a specific global channe
 - **Python Scripts Location (If needed):** Live 11+ requires 3rd party Remote Scripts to be placed in `~/Music/Ableton/User Library/Remote Scripts/`. The legacy preferences folder (`~/Library/Preferences/Ableton/Live X.X/User Remote Scripts`) ignores `.py` directories and only supports generic `UserConfiguration.txt` templates.
 - **Execution Tooling:** Use `npx tsx src/index.ts` to run the project. Standard `ts-node` struggles with module resolution out of the box in this specific build context.
 - **Virtual Screen Abstract:** The hardware connection acts as a global singleton (`core/OhmRGB.ts`), which dispatches `button` and `control` events to a subclass of `core/VirtualScreen.ts`. This allows rapid context switching and encapsulates logic neatly (e.g. `LooperScreen.ts`).
+
+## Hardware & Reverse-Engineering Learnings
+
+### Action Maps vs LED Maps (The "AHA" Moment)
+
+On the OhmRGB firmware, **Action Maps** (the MIDI note emitted when a button is physically pressed) and **LED Maps** (the MIDI note the hardware listens to in order to light up a button) are completely decoupled.
+
+- When changing a color in the Livid Editor, it communicates via raw hardware dumps (`CMD 4` SysEx), modifying the physical `btn_ID` embedded in the hardware (e.g., `btn_76` for the Play button).
+- When trying to update colors in Node.js via performance mapping (`noteon` messages), you must send the exact MIDI Note index registered in the **LED Map** (`CMD 35` for Notes, `CMD 36` for CCs). Sending matching notes won't work unless the routing tables are set 1:1.
+
+### Deciphering the Livid Online Editor Codebase
+
+When debugging routing, SysEx mapping, or LED behavior, the `livid-online-editor` source code acts as our Rosetta Stone. Look in these specific files:
+
+- `livid-online-editor/js/sysexToLivid.js`: The most important file. Parses incoming raw SysEx from the device and mutates state. `sxToObj[7]` (Product ID 7) contains the schema for interpreting OhmRGB memory dumps. E.g., `CMD 35` and `CMD 36` arrays contain the exact tables of CC/Note -> internal hardware LED ID.
+- `livid-online-editor/js/faceplate.js`: Contains the UI geometry and geographical element ID assignments. Searching `controller[7]` maps physical button placement (e.g. "Play") to its canonical internal Hardware ID (e.g., `btn_76`).
+- `livid-online-editor/index.html`: Contains drop-downs and static UI constraints that usually betray parameter formatting—such as discovering that "fixed note velocity" or specific color values require special thresholds.
+- `livid-online-editor/js/lividToSysex.js`: Controls how the web app marshals interface changes back into raw `F0 ... F7` packets. Useful for learning how to securely overwrite controller states if we ever move out of purely performance commands (`noteon`).

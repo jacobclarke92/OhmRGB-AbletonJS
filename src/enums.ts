@@ -1,12 +1,12 @@
 export enum OhmColor {
   Off = 0,
-  Red = 1,
-  Green = 2,
-  Yellow = 3,
-  Blue = 4,
-  Magenta = 5,
-  Cyan = 6,
-  White = 7,
+  Red = 2,
+  Green = 4,
+  Yellow = 8,
+  Blue = 16,
+  Magenta = 32,
+  Cyan = 64,
+  White = 127,
 }
 
 export enum LooperState {
