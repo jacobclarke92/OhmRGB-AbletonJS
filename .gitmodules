@@ -1,0 +1,3 @@
+[submodule "livid-online-editor"]
+	path = livid-online-editor
+	url = https://github.com/LividInstruments/Livid-Online-Editor.git
