@@ -159,10 +159,10 @@ export class LooperScreen extends VirtualScreen {
 
       if (track) {
         if (this.selectedTrackId === track.raw.id) {
-          this.ohm.setLed(btnId, OhmColor.Blue)
+          this.ohm.setLed(btnId, OhmColor.White)
           selectedTrackLooper = await getLooperOnTrack(track)
         } else {
-          this.ohm.setLed(btnId, OhmColor.Green)
+          this.ohm.setLed(btnId, OhmColor.Blue)
         }
       } else {
         this.ohm.setLed(btnId, OhmColor.Off)
