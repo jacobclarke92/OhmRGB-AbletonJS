@@ -1,7 +1,10 @@
 import { Ableton } from 'ableton-js'
 
-import { OhmRGB } from './core/OhmRGB'
+import { CROSSFADE_BUTTONS, OhmRGB } from './core/OhmRGB'
+import { VirtualScreen } from './core/VirtualScreen'
 import { LooperScreen } from './screens/LooperScreen'
+import { GeometricScreen } from './screens/GeometricScreen'
+import { SessionScreen } from './screens/SessionScreen'
 
 async function main() {
   console.log('Connecting to Ableton Live...')
@@ -11,10 +14,7 @@ async function main() {
     await ableton.start()
     console.log('Connected to Ableton Live API!')
   } catch (err) {
-    console.warn(
-      'Could not connect to Ableton. Is Max for Live device loaded?',
-      err,
-    )
+    console.warn('Could not connect to Ableton. Is Max for Live device loaded?', err)
   }
 
   console.log('Connecting to OhmRGB...')
@@ -22,18 +22,37 @@ async function main() {
   ohm.clearAllLeds()
 
   // Screen management
-  const looperScreen = new LooperScreen(ohm, ableton)
+  let currentScreenIndex = 0
+  const screens: VirtualScreen[] = [
+    new SessionScreen(ohm, ableton),
+    new LooperScreen(ohm, ableton),
+    new GeometricScreen(ohm, ableton),
+  ]
 
-  ohm.on('button', (event) => {
-    looperScreen.onButton(event.id, event.velocity)
+  ohm.on('button', async (event) => {
+    // CC 64 and 72 mapped as crossfade buttons to cycle screens
+    if (event.velocity > 0 && CROSSFADE_BUTTONS.includes(event.id)) {
+      await screens[currentScreenIndex]!.onDeactivate()
+
+      if (event.id === CROSSFADE_BUTTONS[0])
+        currentScreenIndex = (currentScreenIndex - 1 + screens.length) % screens.length
+      else currentScreenIndex = (currentScreenIndex + 1) % screens.length
+
+      console.log(`Changed to screen index ${currentScreenIndex}`)
+      ohm.clearAllLeds()
+      await screens[currentScreenIndex]!.onActivate()
+      return
+    }
+
+    screens[currentScreenIndex]!.onButton(event.id, event.velocity)
   })
 
   ohm.on('control', (event) => {
-    looperScreen.onControl(event.id, event.value)
+    screens[currentScreenIndex]!.onControl(event.id, event.value)
   })
 
-  console.log('\n🎧 Ready! Press Ctrl+C to exit.')
-  await looperScreen.onActivate()
+  console.log('\n🎧 Ready! Press Ctrl+C to exit.\n')
+  await screens[currentScreenIndex]!.onActivate()
 
   process.on('SIGINT', () => {
     console.log('\nClosing ports...')

@@ -17,13 +17,13 @@ Below is the SysEx and hardware mapping protocol gleaned from the `livid-online-
 The OhmRGB uses a 3-bit RGB LED under each button. Supported combinations yield 8 colors, which are controlled via standard MIDI Note On velocity payload bits. To correctly command true colors inside Ableton/Node, the velocities are mapped to powers of 2 (bitmasks/binary scaling thresholds) rather than sequentially:
 
 0. Off = 0
-1. Red = 2
-2. Green = 4
-3. Yellow = 8
-4. Blue = 16
-5. Magenta = 32
-6. Cyan = 64
-7. White = 127
+1. White = 2
+2. Cyan = 4
+3. Magenta = 8
+4. Red = 16
+5. Blue = 32
+6. Yellow = 64
+7. Green = 127
 
 ### Hardware Layout & Parsing Defaults
 
